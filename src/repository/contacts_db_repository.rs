@@ -58,7 +58,7 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_all(&self.db_pool)
             .await {
                 Ok(contacts) => Ok(contacts),
-                Err(_) => Err("database query error".to_string()),
+                Err(db_error) => Err(db_error.to_string()),
             }
     }
 
@@ -74,7 +74,7 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(Some(contact)),
-                Err(_) => Err("database query error".to_string()),
+                Err(db_error) => Err(db_error.to_string()),
             }
     }
 
@@ -92,7 +92,7 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(contact),
-                Err(_) => Err("database query error".to_string()),
+                Err(db_error) => Err(db_error.to_string()),
             }
     }
 
@@ -111,7 +111,7 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(contact),
-                Err(_) => Err("database query error".to_string()),
+                Err(db_error) => Err(db_error.to_string()),
             }
     }
 
@@ -121,7 +121,7 @@ impl ContactsRepository for ContactsDbRepository {
             .execute(&self.db_pool)
             .await {
                 Ok(_) => Ok(true),
-                Err(_) => Err("database query error".to_string()),
+                Err(db_error) => Err(db_error.to_string()),
             }
     }
 }

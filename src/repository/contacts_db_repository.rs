@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::postgres::PgRow;
-use sqlx::postgres::Postgres;
-use sqlx::Pool;
+use sqlx::PgPool;
 use sqlx::Row;
 
 use crate::models::contact::Contact;
@@ -17,7 +16,7 @@ const DEFAILT_PAGE_SIZE: u32 = 5;
 
 #[derive(Debug, Clone)]
 pub struct ContactsDbRepository {
-    pub db_pool: Pool<Postgres>,
+    db_pool: PgPool,
 }
 
 impl ContactsDbRepository {
@@ -25,16 +24,16 @@ impl ContactsDbRepository {
         match PgPoolOptions::new()
             .max_connections(MAX_CONNECTIONS)
             .connect(db_url)
-            .await {
-                Ok(db_pool) => ContactsDbRepository { db_pool },
-                Err(e) => panic!("Couldn't establish DB connection: {}", e),
-            }
+            .await
+        {
+            Ok(db_pool) => ContactsDbRepository { db_pool },
+            Err(e) => panic!("Couldn't establish DB connection: {}", e),
+        }
     }
 }
 
 #[async_trait]
 impl ContactsRepository for ContactsDbRepository {
-    
     async fn get_all(
         &self,
         page_no: Option<u32>,
@@ -56,10 +55,11 @@ impl ContactsRepository for ContactsDbRepository {
                 email: row.get("email"),
             })
             .fetch_all(&self.db_pool)
-            .await {
-                Ok(contacts) => Ok(contacts),
-                Err(db_error) => Err(db_error.to_string()),
-            }
+            .await
+        {
+            Ok(contacts) => Ok(contacts),
+            Err(db_error) => Err(db_error.to_string()),
+        }
     }
 
     async fn get(&self, id: ContactId) -> Result<Option<Contact>, String> {
@@ -72,10 +72,11 @@ impl ContactsRepository for ContactsDbRepository {
                 email: row.get("email"),
             })
             .fetch_one(&self.db_pool)
-            .await {
-                Ok(contact) => Ok(Some(contact)),
-                Err(db_error) => Err(db_error.to_string()),
-            }
+            .await
+        {
+            Ok(contact) => Ok(Some(contact)),
+            Err(db_error) => Err(db_error.to_string()),
+        }
     }
 
     async fn add(&self, new_contact: NewContact) -> Result<Contact, String> {
@@ -119,9 +120,10 @@ impl ContactsRepository for ContactsDbRepository {
         match sqlx::query("DELETE FROM contacts WHERE id = $1;")
             .bind(id.0)
             .execute(&self.db_pool)
-            .await {
-                Ok(_) => Ok(true),
-                Err(db_error) => Err(db_error.to_string()),
-            }
+            .await
+        {
+            Ok(_) => Ok(true),
+            Err(db_error) => Err(db_error.to_string()),
+        }
     }
 }

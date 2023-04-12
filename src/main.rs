@@ -1,4 +1,5 @@
 mod models;
+mod repository;
 
 #[tokio::main]
 async fn main() {

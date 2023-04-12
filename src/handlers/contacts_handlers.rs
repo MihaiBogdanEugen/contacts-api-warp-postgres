@@ -4,6 +4,9 @@ use warp::hyper::StatusCode;
 use warp::Rejection;
 use warp::Reply;
 
+use crate::models::contact::Contact;
+use crate::models::contact::ContactId;
+use crate::models::contact::NewContact;
 use crate::models::errors::Error;
 use crate::repository::contacts_repository::ContactsRepository;
 
@@ -21,6 +24,52 @@ pub async fn get_all_contacts(
         .await
     {
         Ok(val) => Ok(warp::reply::json(&val)),
+        Err(err) => Err(warp::reject::custom(err)),
+    }
+}
+
+pub async fn get_contact(
+    id: i32,
+    contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    let possible_contact: Option<Contact> = match contacts_repository.get(ContactId(id)).await {
+        Ok(x) => x,
+        Err(err) => return Err(warp::reject::custom(err)),
+    };
+
+    match possible_contact {
+        Some(val) => Ok(warp::reply::json(&val)),
+        None => Err(warp::reject::not_found()),
+    }
+}
+
+pub async fn add_conact(
+    new_contact: NewContact,
+    contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    match contacts_repository.add(new_contact).await {
+        Ok(val) => Ok(warp::reply::json(&val)),
+        Err(err) => Err(warp::reject::custom(err)),
+    }
+}
+
+pub async fn update_contact(
+    contact: Contact,
+    id: i32,
+    contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    match contacts_repository.update(contact, ContactId(id)).await {
+        Ok(val) => Ok(warp::reply::json(&val)),
+        Err(err) => Err(warp::reject::custom(err)),
+    }
+}
+
+pub async fn delete_contact(
+    id: i32,
+    contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    match contacts_repository.delete(ContactId(id)).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
         Err(err) => Err(warp::reject::custom(err)),
     }
 }

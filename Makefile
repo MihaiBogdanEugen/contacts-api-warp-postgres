@@ -43,6 +43,11 @@ test:
 clippy:
 	cargo clippy --all-targets --all-features --verbose
 
+
+## doc: Build and open the documentation for the local package
+docs
+	cargo doc --no-deps --open
+
 ## start-db: Run docker-compose to start the Postgres db
 start-db:
 	docker-compose up -d
@@ -51,4 +56,4 @@ start-db:
 stop-db:
 	docker-compose down	
 
-.PHONY: help build run build-release run-release update check clean fmt test clippy start-db stop-db
+.PHONY: help build run build-release run-release update check clean fmt test clippy doc start-db stop-db

@@ -12,6 +12,8 @@ mod routes;
 use crate::repository::contacts_db_repository::ContactsDbRepository;
 use crate::routes::contacts_routes::get_all_routes;
 
+const API_PORT_KEY: &str = "API_PORT";
+const DEFAULT_API_PORT: &str = "8090";
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
 #[tokio::main]
@@ -19,7 +21,8 @@ async fn main() {
     dotenv().expect("Missing .env file");
     env_logger::init();
 
-    let port: String = env::var("API_PORT").unwrap_or("8090".to_string());
+    let port: String = env::var(API_PORT_KEY)
+        .unwrap_or(DEFAULT_API_PORT.to_string());
     let addr_as_str: String = format!("127.0.0.1:{port}");
     let addr: SocketAddr = addr_as_str
         .parse()

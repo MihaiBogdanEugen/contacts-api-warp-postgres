@@ -10,10 +10,10 @@ use crate::models::contact::NewContact;
 use crate::models::errors::Error;
 
 use super::contacts_repository::ContactsRepository;
+use super::contacts_repository::DEFAILT_PAGE_SIZE;
+use super::contacts_repository::DEFAULT_PAGE_NO;
 
 const MAX_CONNECTIONS: u32 = 5;
-const DEFAULT_PAGE_NO: u32 = 1;
-const DEFAILT_PAGE_SIZE: u32 = 5;
 
 #[derive(Debug, Clone)]
 pub struct ContactsDbRepository {

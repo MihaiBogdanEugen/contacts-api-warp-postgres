@@ -43,9 +43,8 @@ test:
 clippy:
 	cargo clippy --all-targets --all-features --verbose
 
-
 ## doc: Build and open the documentation for the local package
-docs
+doc:
 	cargo doc --no-deps --open
 
 ## start-db: Run docker-compose to start the Postgres db

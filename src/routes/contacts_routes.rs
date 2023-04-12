@@ -23,12 +23,17 @@ pub fn get_all_routes(
             Method::OPTIONS.as_str(),
         ]);
 
+    let logging = warp::log::custom(|info| {
+        eprintln!("{} {} {}", info.method(), info.path(), info.status());
+    });        
+
     get_all_contacts_route(db_repository.clone())
         .or(get_contact_route(db_repository.clone()))
         .or(add_contact_route(db_repository.clone()))
         .or(update_contact_route(db_repository.clone()))
         .or(delete_contact_route(db_repository))
         .with(cors)
+        .with(logging)
         .recover(contacts_handlers::handle_rejection)
 }
 

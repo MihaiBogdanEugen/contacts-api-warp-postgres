@@ -13,11 +13,14 @@ const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
 #[tokio::main]
 async fn main() {
-
     dotenv().expect("Missing .env file");
-    let db_url: String = env::var(DATABASE_URL_KEY).unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
+
+    let db_url: String = env::var(DATABASE_URL_KEY)
+        .unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
 
     let db_repository: ContactsDbRepository = ContactsDbRepository::new(&db_url).await;
+
+    sqlx::migrate!().run(&db_repository.clone().db_pool).await.expect("cannot run migrations");
 
     let new_contact: NewContact = NewContact {
         name: "Bogdan Mihai".to_string(),

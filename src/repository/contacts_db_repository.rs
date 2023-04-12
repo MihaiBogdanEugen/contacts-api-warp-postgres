@@ -17,7 +17,7 @@ const DEFAILT_PAGE_SIZE: u32 = 5;
 
 #[derive(Debug, Clone)]
 pub struct ContactsDbRepository {
-    db_pool: Pool<Postgres>,
+    pub db_pool: Pool<Postgres>,
 }
 
 impl ContactsDbRepository {

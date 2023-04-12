@@ -4,13 +4,12 @@ use sqlx::PgConnection;
 use std::env;
 use std::net::SocketAddr;
 
-mod handlers;
+mod api;
 mod models;
 mod repositories;
-mod routes;
 
 use crate::repositories::contacts_db_repository::ContactsDbRepository;
-use crate::routes::contacts_routes::get_all_routes;
+use crate::api::contacts_routes::get_all_routes;
 
 const API_PORT_KEY: &str = "API_PORT";
 const DEFAULT_API_PORT: &str = "8090";

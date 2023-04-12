@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use warp::hyper::Method;
 use warp::Filter;
 
-use crate::handlers::contacts_handlers;
+use crate::api::contacts_handlers;
 use crate::models::contact::Contact;
 use crate::models::contact::NewContact;
 use crate::repositories::contacts_db_repository::ContactsDbRepository;

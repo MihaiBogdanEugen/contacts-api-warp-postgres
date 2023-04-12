@@ -54,8 +54,8 @@ pub async fn add_conact(
 }
 
 pub async fn update_contact(
-    contact: Contact,
     id: i32,
+    contact: Contact,
     contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
     match contacts_repository.update(contact, ContactId(id)).await {

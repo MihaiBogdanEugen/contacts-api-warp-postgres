@@ -3,9 +3,11 @@ use std::convert::Infallible;
 use warp::hyper::Method;
 use warp::Filter;
 
-use crate::handlers::contacts_handlers::get_all_contacts;
-use crate::handlers::contacts_handlers::handle_rejection;
+use crate::handlers::contacts_handlers;
+use crate::models::contact::{Contact, NewContact};
 use crate::repository::contacts_db_repository::ContactsDbRepository;
+
+const MAX_JSON_PAYLOAD_SIZE: u64 = 1024 * 16;
 
 pub fn get_all_routes(
     db_repository: ContactsDbRepository,
@@ -21,25 +23,74 @@ pub fn get_all_routes(
             Method::OPTIONS.as_str(),
         ]);
 
-    let routes = get_all_questions_route(db_repository.clone())
+    get_all_contacts_route(db_repository.clone())
+        .or(get_contact_route(db_repository.clone()))
+        .or(add_contact_route(db_repository.clone()))
+        .or(update_contact_route(db_repository.clone()))
+        .or(delete_contact_route(db_repository))
         .with(cors)
-        .recover(handle_rejection);
-
-    return routes;
+        .recover(contacts_handlers::handle_rejection)
 }
 
-fn get_all_questions_route(
+fn get_all_contacts_route(
     db_repository: ContactsDbRepository,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("contacts")
         .and(warp::get())
         .and(warp::query())
         .and(with_repository(db_repository))
-        .and_then(get_all_contacts)
+        .and_then(contacts_handlers::get_all_contacts)
+}
+
+fn get_contact_route(
+    db_repository: ContactsDbRepository,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("contacts" / i32)
+        .and(warp::get())
+        .and(with_repository(db_repository))
+        .and_then(contacts_handlers::get_contact)
+}
+
+fn add_contact_route(
+    db_repository: ContactsDbRepository,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("contacts")
+        .and(warp::post())
+        .and(get_new_contact_json_body())
+        .and(with_repository(db_repository))
+        .and_then(contacts_handlers::add_conact)
+}
+
+fn update_contact_route(
+    db_repository: ContactsDbRepository,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("contacts" / i32)
+        .and(warp::put())
+        .and(get_contact_json_body())
+        .and(with_repository(db_repository))
+        .and_then(contacts_handlers::update_contact)
+}
+
+fn delete_contact_route(
+    db_repository: ContactsDbRepository,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("contacts" / i32)
+        .and(warp::delete())
+        .and(with_repository(db_repository))
+        .and_then(contacts_handlers::delete_contact)
 }
 
 fn with_repository(
     db_repository: ContactsDbRepository,
 ) -> impl Filter<Extract = (ContactsDbRepository,), Error = Infallible> + Clone {
     warp::any().map(move || db_repository.clone())
+}
+
+fn get_new_contact_json_body(
+) -> impl Filter<Extract = (NewContact,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
+}
+
+fn get_contact_json_body() -> impl Filter<Extract = (Contact,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
 }

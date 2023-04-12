@@ -4,8 +4,9 @@ use warp::hyper::Method;
 use warp::Filter;
 
 use crate::handlers::contacts_handlers;
-use crate::models::contact::{Contact, NewContact};
-use crate::repository::contacts_db_repository::ContactsDbRepository;
+use crate::models::contact::Contact;
+use crate::models::contact::NewContact;
+use crate::repositories::contacts_db_repository::ContactsDbRepository;
 
 const MAX_JSON_PAYLOAD_SIZE: u64 = 1024 * 16;
 
@@ -25,7 +26,7 @@ pub fn get_all_routes(
 
     let logging = warp::log::custom(|info| {
         eprintln!("{} {} {}", info.method(), info.path(), info.status());
-    });        
+    });
 
     get_all_contacts_route(db_repository.clone())
         .or(get_contact_route(db_repository.clone()))

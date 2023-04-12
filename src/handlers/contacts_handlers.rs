@@ -8,7 +8,7 @@ use crate::models::contact::Contact;
 use crate::models::contact::ContactId;
 use crate::models::contact::NewContact;
 use crate::models::errors::Error;
-use crate::repository::contacts_repository::ContactsRepository;
+use crate::repositories::contacts_repository::ContactsRepository;
 
 const PAGE_NO_KEY: &str = "page_no";
 const PAGE_SIZE: &str = "page_size";
@@ -45,7 +45,7 @@ pub async fn get_contact(
 
 pub async fn add_conact(
     new_contact: NewContact,
-    contacts_repository: impl ContactsRepository,
+    mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
     match contacts_repository.add(new_contact).await {
         Ok(val) => Ok(warp::reply::json(&val)),
@@ -56,7 +56,7 @@ pub async fn add_conact(
 pub async fn update_contact(
     id: i32,
     contact: Contact,
-    contacts_repository: impl ContactsRepository,
+    mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
     match contacts_repository.update(contact, ContactId(id)).await {
         Ok(val) => Ok(warp::reply::json(&val)),
@@ -66,7 +66,7 @@ pub async fn update_contact(
 
 pub async fn delete_contact(
     id: i32,
-    contacts_repository: impl ContactsRepository,
+    mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
     match contacts_repository.delete(ContactId(id)).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT),
@@ -84,7 +84,7 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
     if query_parameters.contains_key(PAGE_NO_KEY) {
         page_no = match query_parameters.get(PAGE_NO_KEY).unwrap().parse::<u32>() {
             Ok(val) => Some(val),
-            Err(error) => return Err(Error::ParseError(error)),
+            Err(error) => return Err(Error::StringToU32(error)),
         };
     }
 
@@ -92,7 +92,7 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
     if query_parameters.contains_key(PAGE_SIZE) {
         page_size = match query_parameters.get(PAGE_SIZE).unwrap().parse::<u32>() {
             Ok(val) => Some(val),
-            Err(error) => return Err(Error::ParseError(error)),
+            Err(error) => return Err(Error::StringToU32(error)),
         };
     }
 

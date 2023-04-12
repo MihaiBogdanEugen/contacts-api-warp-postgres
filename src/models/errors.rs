@@ -6,15 +6,17 @@ use warp::reject::Reject;
 
 #[derive(Debug)]
 pub enum Error {
-    ParseError(std::num::ParseIntError),
-    DbError(sqlx::Error),
+    StringToU32(std::num::ParseIntError),
+    NumTryFromIntError(std::num::TryFromIntError),
+    Db(sqlx::Error),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            Error::ParseError(err) => write!(f, "Cannot parse parameter: {}", err),
-            Error::DbError(err) => write!(f, "DB error: {}", err),
+            Error::StringToU32(err) => write!(f, "std::num::ParseIntError: {}", err),
+            Error::NumTryFromIntError(err) => write!(f, "std::num::TryFromIntError: {}", err),
+            Error::Db(err) => write!(f, "sqlx::Error: {}", err),
         }
     }
 }

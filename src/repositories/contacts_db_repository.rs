@@ -9,9 +9,8 @@ use crate::models::contact::ContactId;
 use crate::models::contact::NewContact;
 use crate::models::errors::Error;
 
+use super::contacts_repository::get_limit_and_offset;
 use super::contacts_repository::ContactsRepository;
-use super::contacts_repository::DEFAILT_PAGE_SIZE;
-use super::contacts_repository::DEFAULT_PAGE_NO;
 
 const MAX_CONNECTIONS: u32 = 5;
 
@@ -40,91 +39,79 @@ impl ContactsRepository for ContactsDbRepository {
         page_no: Option<u32>,
         page_size: Option<u32>,
     ) -> Result<Vec<Contact>, Error> {
-        let page_no: u32 = page_no.unwrap_or(DEFAULT_PAGE_NO);
-        let page_size: u32 = page_size.unwrap_or(DEFAILT_PAGE_SIZE);
-
-        let limit: u32 = page_size;
-        let offset: u32 = (page_no - 1) * page_size;
+        let (limit, offset): (u32, u32) = get_limit_and_offset(page_no, page_size);
 
         match sqlx::query("SELECT id, name, phone_no, email FROM contacts LIMIT $1 OFFSET $2;")
             .bind(limit as i32)
             .bind(offset as i32)
-            .map(|row: PgRow| Contact {
-                id: ContactId(row.get("id")),
-                name: row.get("name"),
-                phone_no: row.get("phone_no"),
-                email: row.get("email"),
-            })
+            .map(map_row)
             .fetch_all(&self.db_pool)
             .await
         {
             Ok(contacts) => Ok(contacts),
-            Err(err) => Err(Error::DbError(err)),
+            Err(err) => Err(Error::Db(err)),
         }
     }
 
     async fn get(&self, id: ContactId) -> Result<Option<Contact>, Error> {
         match sqlx::query("SELECT id, name, phone_no, email FROM contacts WHERE id = $1;")
             .bind(id.0)
-            .map(|row: PgRow| Contact {
-                id: ContactId(row.get("id")),
-                name: row.get("name"),
-                phone_no: row.get("phone_no"),
-                email: row.get("email"),
-            })
+            .map(map_row)
             .fetch_one(&self.db_pool)
             .await
         {
             Ok(contact) => Ok(Some(contact)),
-            Err(err) => Err(Error::DbError(err)),
+            Err(err) => Err(Error::Db(err)),
         }
     }
 
-    async fn add(&self, new_contact: NewContact) -> Result<Contact, Error> {
-        match sqlx::query("INSERT INTO contacts(name, phone_no, email) VALUES ($1, $2, $3) RETURNING id, name, phone_no, email;")
-            .bind(new_contact.name)
-            .bind(new_contact.phone_no)
-            .bind(new_contact.email)
-            .map(|row: PgRow| Contact {
-                id: ContactId(row.get("id")),
-                name: row.get("name"),
-                phone_no: row.get("phone_no"),
-                email: row.get("email")
-            })
-            .fetch_one(&self.db_pool)
-            .await {
-                Ok(contact) => Ok(contact),
-                Err(err) => Err(Error::DbError(err)),
-            }
+    async fn add(&mut self, new_contact: NewContact) -> Result<Contact, Error> {
+        match sqlx::query(
+            "INSERT INTO contacts(name, phone_no, email) VALUES ($1, $2, $3) RETURNING id, name, phone_no, email;",
+        )
+        .bind(new_contact.name)
+        .bind(new_contact.phone_no)
+        .bind(new_contact.email)
+        .map(map_row)
+        .fetch_one(&self.db_pool)
+        .await
+        {
+            Ok(contact) => Ok(contact),
+            Err(err) => Err(Error::Db(err)),
+        }
     }
 
-    async fn update(&self, contact: Contact, id: ContactId) -> Result<Contact, Error> {
+    async fn update(&mut self, contact: Contact, id: ContactId) -> Result<Contact, Error> {
         match sqlx::query("UPDATE contacts SET name = $1, phone_no = $2, email = $3 WHERE id = $4 RETURNING id, name, phone_no, email;")
             .bind(contact.name)
             .bind(contact.phone_no)
             .bind(contact.email)
             .bind(id.0)
-            .map(|row: PgRow| Contact {
-                id: ContactId(row.get("id")),
-                name: row.get("name"),
-                phone_no: row.get("phone_no"),
-                email: row.get("email")
-            })
+            .map(map_row)
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(contact),
-                Err(err) => Err(Error::DbError(err)),
+                Err(err) => Err(Error::Db(err)),
             }
     }
 
-    async fn delete(&self, id: ContactId) -> Result<bool, Error> {
+    async fn delete(&mut self, id: ContactId) -> Result<bool, Error> {
         match sqlx::query("DELETE FROM contacts WHERE id = $1;")
             .bind(id.0)
             .execute(&self.db_pool)
             .await
         {
             Ok(_) => Ok(true),
-            Err(err) => Err(Error::DbError(err)),
+            Err(err) => Err(Error::Db(err)),
         }
+    }
+}
+
+fn map_row(row: PgRow) -> Contact {
+    Contact {
+        id: ContactId(row.get("id")),
+        name: row.get("name"),
+        phone_no: row.get("phone_no"),
+        email: row.get("email"),
     }
 }

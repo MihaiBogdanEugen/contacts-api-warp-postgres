@@ -7,6 +7,7 @@ use sqlx::Row;
 use crate::models::contact::Contact;
 use crate::models::contact::ContactId;
 use crate::models::contact::NewContact;
+use crate::models::errors::Error;
 
 use super::contacts_repository::ContactsRepository;
 
@@ -38,7 +39,7 @@ impl ContactsRepository for ContactsDbRepository {
         &self,
         page_no: Option<u32>,
         page_size: Option<u32>,
-    ) -> Result<Vec<Contact>, String> {
+    ) -> Result<Vec<Contact>, Error> {
         let page_no: u32 = page_no.unwrap_or(DEFAULT_PAGE_NO);
         let page_size: u32 = page_size.unwrap_or(DEFAILT_PAGE_SIZE);
 
@@ -58,11 +59,11 @@ impl ContactsRepository for ContactsDbRepository {
             .await
         {
             Ok(contacts) => Ok(contacts),
-            Err(db_error) => Err(db_error.to_string()),
+            Err(err) => Err(Error::DbError(err)),
         }
     }
 
-    async fn get(&self, id: ContactId) -> Result<Option<Contact>, String> {
+    async fn get(&self, id: ContactId) -> Result<Option<Contact>, Error> {
         match sqlx::query("SELECT id, name, phone_no, email FROM contacts WHERE id = $1;")
             .bind(id.0)
             .map(|row: PgRow| Contact {
@@ -75,11 +76,11 @@ impl ContactsRepository for ContactsDbRepository {
             .await
         {
             Ok(contact) => Ok(Some(contact)),
-            Err(db_error) => Err(db_error.to_string()),
+            Err(err) => Err(Error::DbError(err)),
         }
     }
 
-    async fn add(&self, new_contact: NewContact) -> Result<Contact, String> {
+    async fn add(&self, new_contact: NewContact) -> Result<Contact, Error> {
         match sqlx::query("INSERT INTO contacts(name, phone_no, email) VALUES ($1, $2, $3) RETURNING id, name, phone_no, email;")
             .bind(new_contact.name)
             .bind(new_contact.phone_no)
@@ -93,11 +94,11 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(contact),
-                Err(db_error) => Err(db_error.to_string()),
+                Err(err) => Err(Error::DbError(err)),
             }
     }
 
-    async fn update(&self, contact: Contact, id: ContactId) -> Result<Contact, String> {
+    async fn update(&self, contact: Contact, id: ContactId) -> Result<Contact, Error> {
         match sqlx::query("UPDATE contacts SET name = $1, phone_no = $2, email = $3 WHERE id = $4 RETURNING id, name, phone_no, email;")
             .bind(contact.name)
             .bind(contact.phone_no)
@@ -112,18 +113,18 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await {
                 Ok(contact) => Ok(contact),
-                Err(db_error) => Err(db_error.to_string()),
+                Err(err) => Err(Error::DbError(err)),
             }
     }
 
-    async fn delete(&self, id: ContactId) -> Result<bool, String> {
+    async fn delete(&self, id: ContactId) -> Result<bool, Error> {
         match sqlx::query("DELETE FROM contacts WHERE id = $1;")
             .bind(id.0)
             .execute(&self.db_pool)
             .await
         {
             Ok(_) => Ok(true),
-            Err(db_error) => Err(db_error.to_string()),
+            Err(err) => Err(Error::DbError(err)),
         }
     }
 }

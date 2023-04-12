@@ -9,7 +9,7 @@ build:
 
 ## run: Build and run the current package
 run: build
-	cargo run
+	RUST_LOG=debug cargo run
 
 ## build-release: Build the local package and all of its dependencies with optimizations (release mode)
 build-release:
@@ -17,7 +17,7 @@ build-release:
 
  ## run-release: Build and run the current optimized package
 run-release: build-release
-	cargo run --release	
+	RUST_LOG=info cargo run --release	
 
 ## update: Update dependencies listed in Cargo.lock
 update:

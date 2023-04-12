@@ -2,20 +2,28 @@ use dotenv::dotenv;
 use sqlx::Connection;
 use sqlx::PgConnection;
 use std::env;
+use std::net::SocketAddr;
 
-use crate::models::contact::Contact;
-use crate::models::contact::NewContact;
-use crate::repository::contacts_db_repository::ContactsDbRepository;
-use crate::repository::contacts_repository::ContactsRepository;
-
+mod handlers;
 mod models;
 mod repository;
+mod routes;
+
+use crate::repository::contacts_db_repository::ContactsDbRepository;
+use crate::routes::contacts_routes::get_all_routes;
 
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
 #[tokio::main]
 async fn main() {
     dotenv().expect("Missing .env file");
+    env_logger::init();
+
+    let port: String = env::var("API_PORT").unwrap_or("8090".to_string());
+    let addr_as_str: String = format!("127.0.0.1:{port}");
+    let addr: SocketAddr = addr_as_str
+        .parse()
+        .unwrap_or_else(|_| panic!("Cannot parse socket address {}", addr_as_str));
 
     let db_url: String = env::var(DATABASE_URL_KEY)
         .unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
@@ -29,19 +37,9 @@ async fn main() {
         .await
         .expect("cannot run migrations");
 
-    let new_contact: NewContact = NewContact {
-        name: "Sorin Mihai".to_string(),
-        phone_no: 492345678901,
-        email: "sorin.mihai@mail.com".to_string(),
-    };
-
     let db_repository: ContactsDbRepository = ContactsDbRepository::new(&db_url).await;
-    let add_result: Result<Contact, String> = db_repository.add(new_contact).await;
 
-    match add_result {
-        Ok(x) => println!("{:?}", x),
-        Err(x) => println!("{}", x),
-    }
+    let routes = get_all_routes(db_repository);
 
-    println!("Hello, world!");
+    warp::serve(routes).run(addr).await;
 }

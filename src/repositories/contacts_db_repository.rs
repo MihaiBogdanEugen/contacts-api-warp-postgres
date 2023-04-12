@@ -1,6 +1,10 @@
+use std::env;
+
 use async_trait::async_trait;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::postgres::PgRow;
+use sqlx::Connection;
+use sqlx::PgConnection;
 use sqlx::PgPool;
 use sqlx::Row;
 
@@ -12,6 +16,7 @@ use crate::models::errors::Error;
 use super::contacts_repository::get_limit_and_offset;
 use super::contacts_repository::ContactsRepository;
 
+const DATABASE_URL_KEY: &str = "DATABASE_URL";
 const MAX_CONNECTIONS: u32 = 5;
 
 #[derive(Debug, Clone)]
@@ -20,10 +25,22 @@ pub struct ContactsDbRepository {
 }
 
 impl ContactsDbRepository {
-    pub async fn new(db_url: &str) -> Self {
+    pub async fn new() -> Self {
+        let db_url: String = env::var(DATABASE_URL_KEY)
+            .unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
+
+        let mut db_connection: PgConnection = PgConnection::connect(&db_url)
+            .await
+            .unwrap_or_else(|_| panic!("Cannot connect to db {}", db_url));
+
+        sqlx::migrate!()
+            .run(&mut db_connection)
+            .await
+            .expect("cannot run migrations");
+
         match PgPoolOptions::new()
             .max_connections(MAX_CONNECTIONS)
-            .connect(db_url)
+            .connect(&db_url)
             .await
         {
             Ok(db_pool) => ContactsDbRepository { db_pool },

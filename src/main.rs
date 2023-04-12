@@ -8,12 +8,11 @@ mod api;
 mod models;
 mod repositories;
 
-use crate::repositories::contacts_db_repository::ContactsDbRepository;
 use crate::api::contacts_routes::get_all_routes;
+use crate::repositories::contacts_db_repository::ContactsDbRepository;
 
 const API_PORT_KEY: &str = "API_PORT";
 const DEFAULT_API_PORT: &str = "8090";
-const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
 #[tokio::main]
 async fn main() {
@@ -26,19 +25,7 @@ async fn main() {
         .parse()
         .unwrap_or_else(|_| panic!("Cannot parse socket address {}", addr_as_str));
 
-    let db_url: String = env::var(DATABASE_URL_KEY)
-        .unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
-
-    let mut db_connection: PgConnection = PgConnection::connect(&db_url)
-        .await
-        .unwrap_or_else(|_| panic!("Cannot connect to db {}", db_url));
-
-    sqlx::migrate!()
-        .run(&mut db_connection)
-        .await
-        .expect("cannot run migrations");
-
-    let db_repository: ContactsDbRepository = ContactsDbRepository::new(&db_url).await;
+    let db_repository: ContactsDbRepository = ContactsDbRepository::new().await;
 
     let routes = get_all_routes(db_repository);
 

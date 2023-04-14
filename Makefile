@@ -1,6 +1,6 @@
 ## help: Prints this help message
 help:
-	@echo "\nrcontacts-api-warp-postgres\nUsage: \n"
+	@echo "\ncontacts-api-warp-postgres\nUsage: \n"
 	@sed -n "s/^##//p" ${MAKEFILE_LIST} | column -t -s ":" |  sed -e "s/^/ /"
 
 ## build: Build the local package and all of its dependencies

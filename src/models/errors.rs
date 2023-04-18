@@ -2,8 +2,6 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
 
-use warp::reject::Reject;
-
 #[derive(Debug)]
 pub enum Error {
     StringToU32(std::num::ParseIntError),
@@ -20,5 +18,3 @@ impl Display for Error {
         }
     }
 }
-
-impl Reject for Error {}

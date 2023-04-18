@@ -16,10 +16,16 @@ pub struct ContactsInMemoryRepository {
 }
 
 impl ContactsInMemoryRepository {
-    pub async fn new() -> Self {
+    pub fn new() -> Self {
         ContactsInMemoryRepository {
             data: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+}
+
+impl Default for ContactsInMemoryRepository {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

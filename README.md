@@ -61,6 +61,7 @@ Usage:
 - [x] web api using warp
 - [x] cors setup
 - [x] logging
+- [ ] fix no-op edgecases
 - [ ] tracing
 - [ ] validation
 - [ ] refined restful web api
@@ -69,4 +70,4 @@ Usage:
 - [ ] unit tests
 - [ ] integration tests
 - [ ] docker support
-- [ ] ci/cd using gitHub actions
+- [ ] ci/cd using GitHub actions

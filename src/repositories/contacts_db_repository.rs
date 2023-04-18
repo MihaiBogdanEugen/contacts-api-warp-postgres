@@ -29,14 +29,7 @@ impl ContactsDbRepository {
         let db_url: String = env::var(DATABASE_URL_KEY)
             .unwrap_or_else(|_| panic!("Missing environment variable {DATABASE_URL_KEY}"));
 
-        let mut db_connection: PgConnection = PgConnection::connect(&db_url)
-            .await
-            .unwrap_or_else(|_| panic!("Cannot connect to db {}", db_url));
-
-        sqlx::migrate!()
-            .run(&mut db_connection)
-            .await
-            .expect("cannot run migrations");
+        Self::run_migrations(&db_url).await;
 
         match PgPoolOptions::new()
             .max_connections(MAX_CONNECTIONS)
@@ -46,6 +39,17 @@ impl ContactsDbRepository {
             Ok(db_pool) => ContactsDbRepository { db_pool },
             Err(e) => panic!("Couldn't establish DB connection: {}", e),
         }
+    }
+
+    async fn run_migrations(db_url: &String) {
+        let mut db_connection: PgConnection = PgConnection::connect(db_url)
+            .await
+            .unwrap_or_else(|_| panic!("Cannot connect to db {}", db_url));
+
+        sqlx::migrate!()
+            .run(&mut db_connection)
+            .await
+            .unwrap_or_else(|_| panic!("Cannot run migrations"));
     }
 }
 

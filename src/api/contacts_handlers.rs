@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use warp::hyper::StatusCode;
+use warp::reject::Reject;
 use warp::Rejection;
 use warp::Reply;
 
@@ -112,3 +113,5 @@ pub async fn handle_rejection(r: Rejection) -> Result<impl Reply, Rejection> {
         ))
     }
 }
+
+impl Reject for Error {}

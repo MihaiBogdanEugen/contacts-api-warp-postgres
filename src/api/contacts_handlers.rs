@@ -8,12 +8,15 @@ use warp::Reply;
 use crate::models::contact::Contact;
 use crate::models::contact::ContactId;
 use crate::models::contact::NewContact;
+use crate::models::contact::UpdateContactEmail;
+use crate::models::contact::UpdateContactPhoneNo;
 use crate::models::errors::Error;
 use crate::repositories::contacts_repository::ContactsRepository;
 
 const PAGE_NO_KEY: &str = "page_no";
 const PAGE_SIZE: &str = "page_size";
 
+#[rustfmt::skip]
 pub async fn get_all_contacts(
     query_parameters: HashMap<String, String>,
     contacts_repository: impl ContactsRepository,
@@ -22,11 +25,10 @@ pub async fn get_all_contacts(
 
     match contacts_repository
         .get_all(pagination.page_no, pagination.page_size)
-        .await
-    {
-        Ok(val) => Ok(warp::reply::json(&val)),
-        Err(err) => Err(warp::reject::custom(err)),
-    }
+        .await {
+            Ok(val) => Ok(warp::reply::json(&val)),
+            Err(err) => Err(warp::reject::custom(err)),
+        }
 }
 
 pub async fn get_contact(
@@ -40,31 +42,64 @@ pub async fn get_contact(
 
     match possible_contact {
         Some(val) => Ok(warp::reply::json(&val)),
-        None => Err(warp::reject::not_found()),
+        None => Err(warp::reject::custom(Error::NotFound { id })),
     }
 }
 
+#[rustfmt::skip]
 pub async fn add_conact(
     new_contact: NewContact,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository.add(new_contact).await {
-        Ok(val) => Ok(warp::reply::json(&val)),
-        Err(err) => Err(warp::reject::custom(err)),
-    }
+    match contacts_repository.add(new_contact)
+        .await {
+            Ok(val) => Ok(warp::reply::json(&val)),
+            Err(err) => Err(warp::reject::custom(err)),
+        }
 }
 
+#[rustfmt::skip]
 pub async fn update_contact(
     id: i32,
     contact: Contact,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository.update(contact, ContactId(id)).await {
-        Ok(val) => Ok(warp::reply::json(&val)),
-        Err(err) => Err(warp::reject::custom(err)),
-    }
+    match contacts_repository.update(contact, ContactId(id))
+        .await {
+            Ok(_) => Ok(StatusCode::NO_CONTENT),
+            Err(err) => Err(warp::reject::custom(err)),
+        }
 }
 
+#[rustfmt::skip]
+pub async fn update_contact_email(
+    id: i32,
+    payload: UpdateContactEmail,
+    mut contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    match contacts_repository
+        .update_email(payload.email, ContactId(id))
+        .await {
+            Ok(_) => Ok(StatusCode::NO_CONTENT),
+            Err(err) => Err(warp::reject::custom(err)),
+        }
+}
+
+#[rustfmt::skip]
+pub async fn update_contact_phone_no(
+    id: i32,
+    payload: UpdateContactPhoneNo,
+    mut contacts_repository: impl ContactsRepository,
+) -> Result<impl Reply, Rejection> {
+    match contacts_repository
+        .update_phone_no(payload.phone_no, ContactId(id))
+        .await {
+            Ok(_) => Ok(StatusCode::NO_CONTENT),
+            Err(err) => Err(warp::reject::custom(err)),
+        }
+}
+
+#[rustfmt::skip]
 pub async fn delete_contact(
     id: i32,
     mut contacts_repository: impl ContactsRepository,
@@ -101,15 +136,30 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
 }
 
 pub async fn handle_rejection(r: Rejection) -> Result<impl Reply, Rejection> {
-    if let Some(error) = r.find::<Error>() {
+    if let Some(Error::StringToU32(error)) = r.find::<Error>() {
+        Ok(warp::reply::with_status(
+            error.to_string(),
+            StatusCode::BAD_REQUEST,
+        ))
+    } else if let Some(Error::NumTryFromIntError(error)) = r.find::<Error>() {
         Ok(warp::reply::with_status(
             error.to_string(),
             StatusCode::RANGE_NOT_SATISFIABLE,
         ))
+    } else if let Some(Error::Db(error)) = r.find::<Error>() {
+        Ok(warp::reply::with_status(
+            error.to_string(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        ))
+    } else if let Some(Error::NotFound { id }) = r.find::<Error>() {
+        Ok(warp::reply::with_status(
+            id.to_string(),
+            StatusCode::NOT_FOUND,
+        ))
     } else {
         Ok(warp::reply::with_status(
-            "Route not found".to_string(),
-            StatusCode::NOT_FOUND,
+            "Bad request of route not found".to_string(),
+            StatusCode::BAD_REQUEST,
         ))
     }
 }

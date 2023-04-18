@@ -83,13 +83,39 @@ impl ContactsRepository for ContactsInMemoryRepository {
         Ok(contact)
     }
 
-    async fn update(&mut self, contact: Contact, id: ContactId) -> Result<Contact, Error> {
+    async fn update(&mut self, contact: Contact, id: ContactId) -> Result<(), Error> {
         self.data.write().await.insert(id, contact.clone());
-        Ok(contact)
+        Ok(())
     }
 
-    async fn delete(&mut self, id: ContactId) -> Result<bool, Error> {
+    async fn update_email(&mut self, new_email: String, id: ContactId) -> Result<(), Error> {
+        if let Some(contact) = self.data.read().await.get(&id) {
+            self.data.write().await.insert(
+                id,
+                Contact {
+                    email: new_email,
+                    ..contact.clone()
+                },
+            );
+        }
+        Ok(())
+    }
+
+    async fn update_phone_no(&mut self, new_phone_no: i64, id: ContactId) -> Result<(), Error> {
+        if let Some(contact) = self.data.read().await.get(&id) {
+            self.data.write().await.insert(
+                id,
+                Contact {
+                    phone_no: new_phone_no,
+                    ..contact.clone()
+                },
+            );
+        }
+        Ok(())
+    }
+
+    async fn delete(&mut self, id: ContactId) -> Result<(), Error> {
         self.data.write().await.remove_entry(&id);
-        Ok(true)
+        Ok(())
     }
 }

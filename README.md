@@ -61,10 +61,10 @@ Usage:
 - [x] web api using warp
 - [x] cors setup
 - [x] logging
-- [ ] fix no-op edgecases
-- [ ] tracing
+- [x] fix no-op edgecases
+- [x] refined restful web api
 - [ ] validation
-- [ ] refined restful web api
+- [ ] tracing
 - [ ] 3rd party API integrations
 - [ ] auth
 - [ ] unit tests

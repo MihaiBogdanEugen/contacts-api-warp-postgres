@@ -16,3 +16,13 @@ pub struct NewContact {
     pub phone_no: i64,
     pub email: String,
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UpdateContactEmail {
+    pub email: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UpdateContactPhoneNo {
+    pub phone_no: i64,
+}

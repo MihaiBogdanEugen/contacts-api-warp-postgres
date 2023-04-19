@@ -16,19 +16,16 @@ use crate::repositories::contacts_repository::ContactsRepository;
 const PAGE_NO_KEY: &str = "page_no";
 const PAGE_SIZE: &str = "page_size";
 
-#[rustfmt::skip]
 pub async fn get_all_contacts(
     query_parameters: HashMap<String, String>,
     contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
     let pagination: Pagination = get_pagination(query_parameters)?;
-
-    match contacts_repository
+    contacts_repository
         .get_all(pagination.page_no, pagination.page_size)
-        .await {
-            Ok(val) => Ok(warp::reply::json(&val)),
-            Err(err) => Err(warp::reject::custom(err)),
-        }
+        .await
+        .map(|val| warp::reply::json(&val))
+        .map_err(warp::reject::custom)
 }
 
 pub async fn get_contact(
@@ -39,75 +36,67 @@ pub async fn get_contact(
         Ok(x) => x,
         Err(err) => return Err(warp::reject::custom(err)),
     };
-
-    match possible_contact {
-        Some(val) => Ok(warp::reply::json(&val)),
-        None => Err(warp::reject::custom(Error::NotFound { id })),
-    }
+    possible_contact
+        .ok_or(warp::reject::custom(Error::NotFound { id }))
+        .map(|val| warp::reply::json(&val))
 }
 
-#[rustfmt::skip]
 pub async fn add_conact(
     new_contact: NewContact,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository.add(new_contact)
-        .await {
-            Ok(val) => Ok(warp::reply::json(&val)),
-            Err(err) => Err(warp::reject::custom(err)),
-        }
+    contacts_repository
+        .add(new_contact)
+        .await
+        .map(|val| warp::reply::json(&val))
+        .map_err(warp::reject::custom)
 }
 
-#[rustfmt::skip]
 pub async fn update_contact(
     id: i32,
     contact: Contact,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository.update(contact, ContactId(id))
-        .await {
-            Ok(_) => Ok(StatusCode::NO_CONTENT),
-            Err(err) => Err(warp::reject::custom(err)),
-        }
+    contacts_repository
+        .update(contact, ContactId(id))
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(warp::reject::custom)
 }
 
-#[rustfmt::skip]
 pub async fn update_contact_email(
     id: i32,
     payload: UpdateContactEmail,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository
+    contacts_repository
         .update_email(payload.email, ContactId(id))
-        .await {
-            Ok(_) => Ok(StatusCode::NO_CONTENT),
-            Err(err) => Err(warp::reject::custom(err)),
-        }
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(warp::reject::custom)
 }
 
-#[rustfmt::skip]
 pub async fn update_contact_phone_no(
     id: i32,
     payload: UpdateContactPhoneNo,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository
+    contacts_repository
         .update_phone_no(payload.phone_no, ContactId(id))
-        .await {
-            Ok(_) => Ok(StatusCode::NO_CONTENT),
-            Err(err) => Err(warp::reject::custom(err)),
-        }
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(warp::reject::custom)
 }
 
-#[rustfmt::skip]
 pub async fn delete_contact(
     id: i32,
     mut contacts_repository: impl ContactsRepository,
 ) -> Result<impl Reply, Rejection> {
-    match contacts_repository.delete(ContactId(id)).await {
-        Ok(_) => Ok(StatusCode::NO_CONTENT),
-        Err(err) => Err(warp::reject::custom(err)),
-    }
+    contacts_repository
+        .delete(ContactId(id))
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(warp::reject::custom)
 }
 
 struct Pagination {

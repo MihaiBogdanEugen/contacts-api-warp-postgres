@@ -1,15 +1,12 @@
 use std::convert::Infallible;
 
+use serde::de::DeserializeOwned;
 use warp::hyper::Method;
 use warp::Filter;
 use warp::Rejection;
 use warp::Reply;
 
 use crate::api::contacts_handlers;
-use crate::models::contact::Contact;
-use crate::models::contact::NewContact;
-use crate::models::contact::UpdateContactEmail;
-use crate::models::contact::UpdateContactPhoneNo;
 use crate::repositories::contacts_db_repository::ContactsDbRepository;
 
 const MAX_JSON_PAYLOAD_SIZE: u64 = 1024 * 16;
@@ -68,7 +65,7 @@ fn add_contact_route(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     warp::path!("contacts")
         .and(warp::post())
-        .and(get_new_contact_json_body())
+        .and(json_body())
         .and(with_repository(db_repository))
         .and_then(contacts_handlers::add_conact)
 }
@@ -78,7 +75,7 @@ fn update_contact_route(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     warp::path!("contacts" / i32)
         .and(warp::put())
-        .and(get_contact_json_body())
+        .and(json_body())
         .and(with_repository(db_repository))
         .and_then(contacts_handlers::update_contact)
 }
@@ -88,7 +85,7 @@ fn update_contact_email_route(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     warp::path!("contacts-update-email" / i32)
         .and(warp::post())
-        .and(get_contact_email_json_body())
+        .and(json_body())
         .and(with_repository(db_repository))
         .and_then(contacts_handlers::update_contact_email)
 }
@@ -98,7 +95,7 @@ fn update_contact_phone_no_route(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
     warp::path!("contacts-update-phone-no" / i32)
         .and(warp::post())
-        .and(get_contact_phone_no_json_body())
+        .and(json_body())
         .and(with_repository(db_repository))
         .and_then(contacts_handlers::update_contact_phone_no)
 }
@@ -118,20 +115,7 @@ fn with_repository(
     warp::any().map(move || db_repository.clone())
 }
 
-fn get_new_contact_json_body() -> impl Filter<Extract = (NewContact,), Error = Rejection> + Clone {
-    warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
-}
-
-fn get_contact_json_body() -> impl Filter<Extract = (Contact,), Error = Rejection> + Clone {
-    warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
-}
-
-fn get_contact_email_json_body(
-) -> impl Filter<Extract = (UpdateContactEmail,), Error = Rejection> + Clone {
-    warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
-}
-
-fn get_contact_phone_no_json_body(
-) -> impl Filter<Extract = (UpdateContactPhoneNo,), Error = Rejection> + Clone {
+fn json_body<T: DeserializeOwned + Send>(
+) -> impl Filter<Extract = (T,), Error = Rejection> + Clone {
     warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
 }

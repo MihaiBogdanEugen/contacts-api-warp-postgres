@@ -27,6 +27,9 @@ pub enum Error {
 
     /// The provided binary is not a valid UTF-8 character
     InvalidUtf8Value(String),
+
+    /// The external validation api call failed
+    ReqwestMiddleware(String),
 }
 
 impl Display for Error {
@@ -54,6 +57,9 @@ impl Display for Error {
                 write!(f, "The value have an invalid base64 encoding: {}", message)
             }
             Error::InvalidUtf8Value(message) => write!(f, "Invalid UTF-8 Provided: {}", message),
+            Error::ReqwestMiddleware(message) => {
+                write!(f, "The external validation api call failed {}", message)
+            }
         }
     }
 }
@@ -73,5 +79,17 @@ impl From<FromUtf8Error> for Error {
 impl From<sqlx::Error> for Error {
     fn from(err: sqlx::Error) -> Self {
         Error::Db(err.to_string())
+    }
+}
+
+impl From<reqwest_middleware::Error> for Error {
+    fn from(err: reqwest_middleware::Error) -> Self {
+        Error::ReqwestMiddleware(err.to_string())
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Self {
+        Error::ReqwestMiddleware(err.to_string())
     }
 }

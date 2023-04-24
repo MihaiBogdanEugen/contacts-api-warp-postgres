@@ -24,7 +24,7 @@ pub async fn get_all_contacts(
     contacts_repository
         .get_all(pagination.page_no, pagination.page_size)
         .await
-        .map(|val| warp::reply::json(&val))
+        .map(|contacts: Vec<Contact>| warp::reply::json(&contacts))
         .map_err(warp::reject::custom)
 }
 
@@ -38,7 +38,7 @@ pub async fn get_contact(
     };
     possible_contact
         .ok_or(warp::reject::custom(Error::NotFound { id }))
-        .map(|val| warp::reply::json(&val))
+        .map(|contact: Contact| warp::reply::json(&contact))
 }
 
 pub async fn add_conact(
@@ -48,7 +48,7 @@ pub async fn add_conact(
     contacts_repository
         .add(new_contact)
         .await
-        .map(|val| warp::reply::json(&val))
+        .map(|contact: Contact| warp::reply::json(&contact))
         .map_err(warp::reject::custom)
 }
 
@@ -109,7 +109,7 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
     if query_parameters.contains_key(PAGE_NO_KEY) {
         page_no = match query_parameters.get(PAGE_NO_KEY).unwrap().parse::<u32>() {
             Ok(val) => Some(val),
-            Err(error) => return Err(Error::StringToU32(error)),
+            Err(error) => return Err(Error::StringToU32(error.to_string())),
         };
     }
 
@@ -117,7 +117,7 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
     if query_parameters.contains_key(PAGE_SIZE) {
         page_size = match query_parameters.get(PAGE_SIZE).unwrap().parse::<u32>() {
             Ok(val) => Some(val),
-            Err(error) => return Err(Error::StringToU32(error)),
+            Err(error) => return Err(Error::StringToU32(error.to_string())),
         };
     }
 
@@ -125,19 +125,14 @@ fn get_pagination(query_parameters: HashMap<String, String>) -> Result<Paginatio
 }
 
 pub async fn handle_rejection(r: Rejection) -> Result<impl Reply, Rejection> {
-    if let Some(Error::StringToU32(error)) = r.find::<Error>() {
+    if let Some(Error::StringToU32(message)) = r.find::<Error>() {
         Ok(warp::reply::with_status(
-            error.to_string(),
+            message.to_owned(),
             StatusCode::BAD_REQUEST,
         ))
-    } else if let Some(Error::NumTryFromIntError(error)) = r.find::<Error>() {
+    } else if let Some(Error::Db(message)) = r.find::<Error>() {
         Ok(warp::reply::with_status(
-            error.to_string(),
-            StatusCode::RANGE_NOT_SATISFIABLE,
-        ))
-    } else if let Some(Error::Db(error)) = r.find::<Error>() {
-        Ok(warp::reply::with_status(
-            error.to_string(),
+            message.to_owned(),
             StatusCode::INTERNAL_SERVER_ERROR,
         ))
     } else if let Some(Error::NotFound { id }) = r.find::<Error>() {

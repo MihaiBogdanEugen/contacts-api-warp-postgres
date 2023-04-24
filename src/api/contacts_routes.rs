@@ -1,7 +1,9 @@
 use std::convert::Infallible;
 
 use serde::de::DeserializeOwned;
+use warp::cors::Builder;
 use warp::hyper::Method;
+use warp::log::Info;
 use warp::Filter;
 use warp::Rejection;
 use warp::Reply;
@@ -14,7 +16,7 @@ const MAX_JSON_PAYLOAD_SIZE: u64 = 1024 * 16;
 pub fn get_all_routes(
     db_repository: ContactsDbRepository,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    let cors = warp::cors()
+    let cors: Builder = warp::cors()
         .allow_any_origin()
         .allow_header("content-type")
         .allow_methods([
@@ -25,7 +27,7 @@ pub fn get_all_routes(
             Method::OPTIONS.as_str(),
         ]);
 
-    let logging = warp::log::custom(|info| {
+    let logging = warp::log::custom(|info: Info| {
         eprintln!("{} {} {}", info.method(), info.path(), info.status());
     });
 
@@ -115,7 +117,7 @@ fn with_repository(
     warp::any().map(move || db_repository.clone())
 }
 
-fn json_body<T: DeserializeOwned + Send>(
-) -> impl Filter<Extract = (T,), Error = Rejection> + Clone {
+fn json_body<T: DeserializeOwned + Send>() -> impl Filter<Extract = (T,), Error = Rejection> + Clone
+{
     warp::body::content_length_limit(MAX_JSON_PAYLOAD_SIZE).and(warp::body::json())
 }

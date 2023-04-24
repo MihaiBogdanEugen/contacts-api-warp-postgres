@@ -3,6 +3,7 @@ use std::env;
 use std::net::SocketAddr;
 
 mod api;
+mod middleware;
 mod models;
 mod repositories;
 

@@ -57,14 +57,8 @@ impl ContactsRepository for ContactsInMemoryRepository {
     }
 
     async fn add(&mut self, new_contact: NewContact) -> Result<Contact, Error> {
-        let mut id: i32 = self
-            .data
-            .read()
-            .await
-            .values()
-            .count()
-            .try_into()
-            .map_err(Error::NumTryFromIntError)?;
+        let count: usize = self.data.read().await.values().count();
+        let mut id: i32 = count as i32;
         while self.data.read().await.contains_key(&ContactId(id)) {
             id += 1;
         }

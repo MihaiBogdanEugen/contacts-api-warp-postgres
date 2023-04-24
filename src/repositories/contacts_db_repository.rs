@@ -5,7 +5,8 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::postgres::PgRow;
 use sqlx::Connection;
 use sqlx::PgConnection;
-use sqlx::PgPool;
+use sqlx::Pool;
+use sqlx::Postgres;
 use sqlx::Row;
 
 use crate::models::contact::Contact;
@@ -29,7 +30,7 @@ const SQL_DELETE: &str = "DELETE FROM contacts WHERE id = $1;";
 
 #[derive(Debug, Clone)]
 pub struct ContactsDbRepository {
-    db_pool: PgPool,
+    db_pool: Pool<Postgres>,
 }
 
 impl ContactsDbRepository {
@@ -43,7 +44,7 @@ impl ContactsDbRepository {
             .max_connections(MAX_CONNECTIONS)
             .connect(&db_url)
             .await
-            .map(|db_pool| ContactsDbRepository { db_pool })
+            .map(|db_pool: Pool<Postgres>| ContactsDbRepository { db_pool })
             .unwrap_or_else(|_| panic!("Couldn't establish a DB connection: {db_url}"))
     }
 
@@ -73,7 +74,7 @@ impl ContactsRepository for ContactsDbRepository {
             .map(map_row)
             .fetch_all(&self.db_pool)
             .await
-            .map_err(Error::Db)
+            .map_err(|err: sqlx::Error| Error::Db(err.to_string()))
     }
 
     async fn get(&self, id: ContactId) -> Result<Option<Contact>, Error> {
@@ -83,9 +84,9 @@ impl ContactsRepository for ContactsDbRepository {
             .fetch_one(&self.db_pool)
             .await
             .map(Some)
-            .or_else(|err| match err {
+            .or_else(|err: sqlx::Error| match err {
                 sqlx::Error::RowNotFound => Ok(None),
-                _ => Err(Error::Db(err)),
+                _ => Err(Error::Db(err.to_string())),
             })
     }
 
@@ -97,7 +98,7 @@ impl ContactsRepository for ContactsDbRepository {
             .map(map_row)
             .fetch_one(&self.db_pool)
             .await
-            .map_err(Error::Db)
+            .map_err(|err: sqlx::Error| Error::Db(err.to_string()))
     }
 
     async fn update(&mut self, contact: Contact, id: ContactId) -> Result<(), Error> {
@@ -109,9 +110,9 @@ impl ContactsRepository for ContactsDbRepository {
             .execute(&self.db_pool)
             .await
             .map(|_| ())
-            .map_err(|err| match err {
+            .map_err(|err: sqlx::Error| match err {
                 sqlx::Error::RowNotFound => Error::NotFound { id: id.0 },
-                _ => Error::Db(err),
+                _ => Error::Db(err.to_string()),
             })
     }
 
@@ -122,9 +123,9 @@ impl ContactsRepository for ContactsDbRepository {
             .execute(&self.db_pool)
             .await
             .map(|_| ())
-            .map_err(|err| match err {
+            .map_err(|err: sqlx::Error| match err {
                 sqlx::Error::RowNotFound => Error::NotFound { id: id.0 },
-                _ => Error::Db(err),
+                _ => Error::Db(err.to_string()),
             })
     }
 
@@ -135,9 +136,9 @@ impl ContactsRepository for ContactsDbRepository {
             .execute(&self.db_pool)
             .await
             .map(|_| ())
-            .map_err(|err| match err {
+            .map_err(|err: sqlx::Error| match err {
                 sqlx::Error::RowNotFound => Error::NotFound { id: id.0 },
-                _ => Error::Db(err),
+                _ => Error::Db(err.to_string()),
             })
     }
 
@@ -147,7 +148,7 @@ impl ContactsRepository for ContactsDbRepository {
             .execute(&self.db_pool)
             .await
             .map(|_| ())
-            .map_err(Error::Db)
+            .map_err(|err: sqlx::Error| Error::Db(err.to_string()))
     }
 }
 

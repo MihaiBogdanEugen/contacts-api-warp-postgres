@@ -11,3 +11,8 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 3s
+      timeout: 5s
+      retries: 5

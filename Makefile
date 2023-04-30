@@ -49,7 +49,7 @@ doc:
 
 ## start-db: Run docker-compose to start the Postgres db
 start-db:
-	docker-compose up -d
+	docker-compose up -d --wait
 
 ## stop-db: Run docker-compose to stop the Postgres db
 stop-db:
